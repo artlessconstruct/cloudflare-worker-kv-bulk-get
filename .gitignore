@@ -1,10 +1,10 @@
 # Local
+.env
 .envrc
-.npmrc
-.nvmrc
 .vscode
 settings.json
 wrangler.toml
+my/
 
 # Logs
 
