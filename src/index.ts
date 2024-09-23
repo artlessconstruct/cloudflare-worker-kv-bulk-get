@@ -6,8 +6,12 @@ import { KVNamespace } from '@cloudflare/workers-types';
 
 type Bindings = {
     API_KEY: string;
-    MAP: KVNamespace;
     MAX_KV_SUBREQUESTS: number;
+    MAP: KVNamespace;
+};
+
+type KVPair = {
+    [key: string]: string | null;
 };
 
 const app = new Hono<{ Bindings: Bindings }>();
@@ -17,52 +21,61 @@ app.use("*", prettyJSON(), logger(), async (c, next) => {
     return auth(c, next);
 });
 
-app.get("/api/listKV", async (c) => {
+app.get("/api/KV/bulkGet", async (c) => {
     try {
         const page = parseInt(c.req.query('page') || '1');
-        if (isNaN(page) || page < 1) {
+        if (isNaN(page) || page <= 0) {
             return c.json({ error: "Invalid page parameter. Must be a positive integer." }, 400);
         }
-        const totalPages = parseInt(c.req.query('totalPages') || '1');
-        if (isNaN(totalPages) || totalPages < 1) {
-            return c.json({ error: "Invalid totalPages parameter. Must be a positive integer." }, 400);
+        const maxPages = parseInt(c.req.query('maxPages') || '1');
+        if (isNaN(maxPages) || maxPages <= 0) {
+            return c.json({ error: "Invalid maxPages parameter. Must be a positive integer." }, 400);
         }
 
-        const pageSize = c.env.MAX_KV_SUBREQUESTS - totalPages; // Maximum number of KV gets we can perform
+        const pageSize = c.env.MAX_KV_SUBREQUESTS - maxPages; // Maximum number of KV gets we can perform
         const listOptions = {
             limit: pageSize,
             cursor: '',
         };
 
         // Skip to the correct page
-        for (let i = 0; i < page; i++) {
-            const listResult = await c.env.MAP.list(listOptions);
+        let listResult = await c.env.MAP.list(listOptions);
+        for (let i = 0; i < page - 1; i++) {
             if (listResult.list_complete) {
-                return c.json({ error: "Page number exceeds available data." }, 400);
+                // We've reached the end of the list before getting to page N
+                if (i < page - 1) {
+                    return c.json({ error: "Page number exceeds available data." }, 400);
+                }
+                break; // We're on the last page, which is what we want
             }
             listOptions.cursor = listResult.cursor;
+            listResult = await c.env.MAP.list(listOptions);
         }
 
-        // Get the keys for the requested page
-        const listResult = await c.env.MAP.list(listOptions);
-        const result = {};
+        // Get all key values in parallel and wait for all promised results to
+        // settle
+        const entries = await Promise.all(
+            listResult.keys.map(async (key): Promise<[string, string | null]> => [
+                key.name,
+                await c.env.MAP.get(key.name)
+            ])
+        );
 
-        // Fetch values for each key
-        const promises = listResult.keys.map(async (key) => {
-            const value = await c.env.MAP.get(key.name);
-            result[key.name] = value;
-        });
+        // Sort entries alphabetically by key
+        entries.sort((a, b) => a[0].localeCompare(b[0]));
 
-        await Promise.all(promises);
+        // Convert sorted entries to object
+        const sortedResult: KVPair = Object.fromEntries(entries);
 
         return c.json({
             page: page,
-            data: result,
-            next_page: listResult.list_complete ? null : page + 1
+            nextPage: listResult.list_complete ? null : page + 1,
+            maxPages: maxPages,
+            data: sortedResult,
         });
 
     } catch (error) {
-        return c.json({ error: error.message }, 500);
+        return c.json({ error: `Failed to bulk get KV key-value pairs with error: ${error}` }, 500);
     }
 });
 
