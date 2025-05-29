@@ -1,0 +1,11 @@
+name = "${WRANGLER_NAME}"
+main = "src/index.ts"
+compatibility_date = "2025-02-14"
+compatibility_flags = ["nodejs_compat"]
+workers_dev = true
+preview_urls = false
+
+kv_namespaces = [{ binding = "MAP", id = "${WRANGLER_KV_MAP_ID}" }]
+
+[vars]
+MAX_KV_SUBREQUESTS = "1000"

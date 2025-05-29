@@ -4,18 +4,25 @@
 
 A Cloudflare Worker which can bulk get all the key-value pairs from a KV namespace via a GET API endpoint
 
-### Features
+## Installation
 
-### Limitations
-
-## Instructions
-
-### Install
-
-### Usage
-
+```bash
+# Create a wrangler.toml from wranger.template.toml
+pnpm run build
+# Deploy the worker
+pnpm run deploy
+# Create the API_KEY secret and store in your .env file
+pnpm run create-api-key
+# Source the API_KEY value from the .env
+. .env
+# Upload to Cloudflare worker
+pnpm run upload-api-key
 ```
-curl -H "Authorization: Bearer $API_KEY" "https://DEPLOYED_APP_LINK/api/kV/bulkGet?page=1&maxPages=1"
+
+## Usage
+
+```bash
+curl -H "Authorization: Bearer $API_KEY" "https://${WORKER_NAME}.${ZONE_NAME}.workers.dev/api/kV/bulkGet?page=1&maxPages=1"
 ```
 
 ## Acknowledgements
@@ -32,11 +39,9 @@ Tutorials:
 
 ## Contributions
 
-Contributions are welcome and are not limited to pull requests. Feel free to
-[open an issue][contribute#issue] or [start a discussion][contribute#discuss].
-
-[contribute#discuss]: https://github.com/artlessconstruct/cloudflare-worker-kv-bulk-get/discussions/new
-[contribute#issue]: https://github.com/artlessconstruct/cloudflare-worker-kv-bulk-get/issues/new
+Contributions as well as pull requests are welcome so feel free to:
+- [Open an issue](https://github.com/artlessconstruct/cloudflare-worker-kv-bulk-get/discussions/new/choose)
+- [Start a discussion](https://github.com/artlessconstruct/cloudflare-worker-kv-bulk-get/issues/new)
 
 ## License
 

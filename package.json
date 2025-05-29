@@ -3,29 +3,38 @@
     "version": "0.0.1",
     "private": true,
     "scripts": {
+        "create-api-key": "sed -i '/^API_KEY=/d' .env && echo \"API_KEY=\\\"$(openssl rand -base64 32)\\\"\" >> .env",
+        "upload-api-key": "echo $API_KEY | npx wrangler secret put API_KEY",
+        "build": "bash ./build.sh",
         "deploy": "wrangler deploy",
-        "dev": "wrangler dev",
-        "start": "wrangler dev",
-        "test": "vitest",
+        "deploy:keep-vars": "wrangler deploy --keep-vars",
+        "dev": "echo `wrangler dev` not supported with email workers",
+        "tail": "wrangler tail",
+        "test": "vitest watch",
         "test:run": "vitest run",
         "test:debug": "vitest run --inspect-brk --pool forks --poolOptions.forks.singleFork # To run in a single child process, and will stop on breakpoints when debugged from vscode",
-        "cf-typegen": "wrangler types"
+        "test:debug:no-file-parallelism": "vitest run --inspect-brk --no-file-parallelism # If pool is unknown",
+        "test:debug:single-thread": "vitest run --inspect-brk --pool threads --poolOptions.threads.singleThread # To run in a single worker",
+        "test:log": "vitest run --reporter=basic --disable-console-intercept",
+        "versions:upload": "wrangler versions upload",
+        "versions:upload:keep-vars": "wrangler versions upload --keep-vars",
+        "cloudflare-typegen": "wrangler types"
     },
     "devDependencies": {
         "@cloudflare/vitest-pool-workers": "^0.6.8",
         "@cloudflare/workers-types": "^4.20250129.0",
         "typescript": "^5.7.3",
         "vitest": "^2.1.8",
-        "wrangler": "^3.106.0"
+        "wrangler": "^4.17.0"
     },
     "dependencies": {
-        "hono": "^4.6.19"
+        "hono": "^4.7.10"
     },
     "engines": {
-        "node": "22.13.1",
-        "pnpm": "10.0.0"
+        "node": "22.9.0",
+        "pnpm": "9.10.0"
     },
     "volta": {
-        "node": "22.13.1"
+        "node": "22.9.0"
     }
 }
